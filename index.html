@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InstaPost - Home</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        skyblue: {
+                            light: '#87CEEB',
+                            DEFAULT: '#4682B4',
+                            dark: '#4169E1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-skyblue-light font-sans flex flex-col h-full">
+    <header class="bg-white border-b border-skyblue-dark fixed top-0 w-full z-10">
+        <div class="container mx-auto px-4 py-2 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-skyblue-dark">InstaPost</h1>
+            <nav>
+                <ul class="flex space-x-4">
+                    <li><a href="index.html" class="text-skyblue-dark font-semibold">Home</a></li>
+                    <li><a href="create_post.html" class="text-skyblue hover:text-skyblue-dark">Create Post</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto mt-16 px-4 max-w-2xl flex-grow">
+        <div id="posts-container" class="space-y-8 mt-8">
+            <!-- Posts will be dynamically added here -->
+        </div>
+        <div id="loading" class="text-center py-4">Loading posts...</div>
+    </main>
+
+    <footer class="bg-white border-t border-skyblue-dark py-4 mt-8">
+        <div class="container mx-auto px-4 text-center text-skyblue-dark">
+            &copy; 2023 InstaPost. All rights reserved.
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const postsContainer = document.getElementById('posts-container');
+            const loadingElement = document.getElementById('loading');
+
+            async function fetchPosts() {
+                try {
+                    const response = await fetch('http://127.0.0.1:8000/api/posts');
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch posts');
+                    }
+                    return await response.json();
+                } catch (error) {
+                    console.error('Error fetching posts:', error);
+                    return [];
+                }
+            }
+
+            function createPostElement(post) {
+                const postElement = document.createElement('div');
+                postElement.className = 'bg-white rounded-lg shadow-md overflow-hidden';
+                postElement.innerHTML = `
+                    <img src="${post.image_url}" alt="Post image" class="w-full h-64 object-cover">
+                    <div class="p-4">
+                        <p class="text-gray-700">${post.caption}</p>
+                        <p class="text-gray-500 text-sm mt-2">${new Date(post.created_at).toLocaleString()}</p>
+                        <div class="mt-4 flex items-center">
+                            <button class="like-button bg-blue-500 text-white px-2 py-1 rounded mr-2" data-post-id="${post.id}">
+                                Like (${post.likes})
+                            </button>
+                            <input type="text" class="comment-input border rounded px-2 py-1 flex-grow" placeholder="Add a comment...">
+                            <button class="comment-button bg-green-500 text-white px-2 py-1 rounded ml-2" data-post-id="${post.id}">
+                                Comment
+                            </button>
+                        </div>
+                        <div class="comments-container mt-4">
+                            ${post.comments.map(comment => `
+                                <div class="comment bg-gray-100 p-2 rounded mt-2">
+                                    <p class="text-sm">${comment.content}</p>
+                                    <p class="text-xs text-gray-500">${new Date(comment.created_at).toLocaleString()}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+
+                const likeButton = postElement.querySelector('.like-button');
+                likeButton.addEventListener('click', () => likePost(post.id));
+
+                const commentButton = postElement.querySelector('.comment-button');
+                const commentInput = postElement.querySelector('.comment-input');
+                commentButton.addEventListener('click', () => addComment(post.id, commentInput.value));
+
+                return postElement;
+            }
+
+            async function likePost(postId) {
+                try {
+                    const response = await fetch(`http://127.0.0.1:8000/api/posts/${postId}/like`, {
+                        method: 'POST',
+                    });
+                    if (!response.ok) {
+                        throw new Error('Failed to like post');
+                    }
+                    displayPosts();
+                } catch (error) {
+                    console.error('Error liking post:', error);
+                }
+            }
+
+            async function addComment(postId, content) {
+                try {
+                    const response = await fetch(`http://127.0.0.1:8000/api/posts/${postId}/comment`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ content: content }),
+                    });
+                    if (!response.ok) {
+                        throw new Error('Failed to add comment');
+                    }
+                    displayPosts();
+                } catch (error) {
+                    console.error('Error adding comment:', error);
+                }
+            }
+
+            async function displayPosts() {
+                loadingElement.style.display = 'block';
+                const posts = await fetchPosts();
+                loadingElement.style.display = 'none';
+
+                if (posts.length === 0) {
+                    postsContainer.innerHTML = '<p class="text-center text-gray-500">No posts available.</p>';
+                } else {
+                    postsContainer.innerHTML = '';
+                    posts.forEach(post => {
+                        const postElement = createPostElement(post);
+                        postsContainer.appendChild(postElement);
+                    });
+                }
+            }
+
+            displayPosts();
+
+            // Refresh posts every 30 seconds
+            setInterval(displayPosts, 30000);
+        });
+    </script>
+</body>
+</html>

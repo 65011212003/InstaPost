@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InstaPost - Create Post</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        skyblue: {
+                            light: '#87CEEB',
+                            DEFAULT: '#4682B4',
+                            dark: '#4169E1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-skyblue-light font-sans flex flex-col h-full">
+    <header class="bg-white border-b border-skyblue-dark fixed top-0 w-full z-10">
+        <div class="container mx-auto px-4 py-2 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-skyblue-dark">InstaPost</h1>
+            <nav>
+                <ul class="flex space-x-4">
+                    <li><a href="index.html" class="text-skyblue hover:text-skyblue-dark">Home</a></li>
+                    <li><a href="create_post.html" class="text-skyblue-dark font-semibold">Create Post</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto mt-16 px-4 max-w-md flex-grow">
+        <div class="bg-white p-6 rounded-lg shadow-md mt-8">
+            <h2 class="text-2xl font-semibold mb-4 text-skyblue-dark">Create a New Post</h2>
+            <form id="post-form" class="space-y-4">
+                <div>
+                    <label for="post-image" class="block text-sm font-medium text-skyblue-dark mb-1">Image URL</label>
+                    <input type="text" id="post-image" required class="w-full p-2 border border-skyblue rounded">
+                </div>
+                <div>
+                    <label for="post-caption" class="block text-sm font-medium text-skyblue-dark mb-1">Caption</label>
+                    <textarea id="post-caption" placeholder="Write a caption..." required class="w-full p-2 border border-skyblue rounded h-24"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-skyblue text-white px-4 py-2 rounded hover:bg-skyblue-dark">Share</button>
+            </form>
+        </div>
+    </main>
+
+    <footer class="bg-white border-t border-skyblue-dark py-4 mt-8">
+        <div class="container mx-auto px-4 text-center text-skyblue-dark">
+            &copy; 2023 InstaPost. All rights reserved.
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('post-form');
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const imageUrl = document.getElementById('post-image').value;
+                const caption = document.getElementById('post-caption').value;
+
+                try {
+                    const response = await fetch('http://127.0.0.1:8000/api/posts', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ image_url: imageUrl, caption: caption }),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to create post');
+                    }
+
+                    const newPost = await response.json();
+                    alert('Post created successfully!');
+                    window.location.href = 'index.html';
+                } catch (error) {
+                    console.error('Error creating post:', error);
+                    alert('Failed to create post. Please try again.');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
